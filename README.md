@@ -26,7 +26,7 @@ cd film-grab-downloader/
 
 3. Install the required dependencies:
     ```bash
-    pip install pandas requests Pyarrow
+    pip install -r requirements.txt
     ```
 
 ## Create a movie list
