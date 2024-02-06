@@ -15,6 +15,35 @@ Film Grab Downloader is a Python script that facilitates the downloading and opt
     pip install pandas requests Pyarrow
     ```
 
+## Create a movie list
+
+Make sure to create a movie list that includes the following keys: `id`, 'title` and `url`. 
+
+Example:
+
+```
+# movie-list.json
+[
+  {
+    "title":"25th Hour",
+    "url":"https://film-grab.com/2010/11/17/25th-hour/",
+    "id":"1482"
+  },
+  {
+    "title":"24 Hour Party People",
+    "url":"https://film-grab.com/2013/07/31/24-hour-party-people/",
+    "id":"464"
+  },
+  {
+    "title":"10 Cloverfield Lane",
+    "url":"https://film-grab.com/2017/03/24/10-cloverfield-lane/",
+    "id":"76"
+  }
+]
+
+```
+
+
 ## Usage
 
 ### Download and (optionally) Extract Movie Galleries
