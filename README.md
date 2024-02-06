@@ -58,7 +58,24 @@ Example:
 
 ```
 
+## Download an already prepared movie list
+
+You can also use a non-updated movie list (contains about 3000 titles):
+
+```commandline
+pip install gdown
+gdown 11bQOupeNBYatGLhm2iZIHljPl65axiNj
+```
+Once downloaded it, move the file to your input folder.
+
+
 ## Usage
+
+### Create some useful folders 
+```commandline
+cd film-grab-downloader/
+mkdir log output input
+```
 
 ### Download and (optionally) Extract Movie Galleries
 
