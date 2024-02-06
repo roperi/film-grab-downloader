@@ -22,7 +22,7 @@ Make sure to create a movie list that includes the following keys: `id`, 'title`
 Example:
 
 ```
-# movie-list.json
+# input/movie-list.json
 [
   {
     "title":"25th Hour",
