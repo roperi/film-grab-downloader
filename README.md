@@ -1,23 +1,38 @@
 # Film Grab Downloader
 
-Film Grab Downloader is a Python script that facilitates the downloading and optional extraction of movie galleries from film-grab.com. It leverages multiprocessing to improve the efficiency of the download process.
+Film Grab Downloader is a Python script that facilitates the downloading and optional extraction of movie galleries from film-grab.com. 
+
+## Features
+- Download and extract movie galleries from film-grab.com.
+- Extract all zip files in their respective folders.
+- Automatically delete zip files after successful extraction.
+- Command-line interface for easy usage.
+- Specify the movie list JSON file and output directory as command-line arguments.
+- Optional flag to indicate whether to extract downloaded files.
 
 ## Installation
 
-1. Create a virtual environment (optional but recommended):
+1. Clone repository
+```commandline
+git clone https://github.com/roperi/film-grab-downloader.git
+cd film-grab-downloader/
+```
+
+2. Create a virtual environment and activate it (optional but recommended):
     ```bash
-    virtualenv -p ~/pythonroot/bin/python3.10
-    source ~/.virtualenvs/film-grab/bin/activate #FilmGrab
+    virtualenv -p ~/pythonroot/bin/python3.10  # example with python 3.10
+    source ~/.virtualenvs/film-grab/bin/activate # activate env
     ```
 
-2. Install the required dependencies:
+3. Install the required dependencies:
     ```bash
     pip install pandas requests Pyarrow
     ```
 
 ## Create a movie list
 
-Make sure to create a movie list that includes the following keys: `id`, 'title` and `url`. 
+Make sure to create a movie list that includes the following keys: `id`, 'title` and `url`. The `id` can be taken from 
+the download zip file button in the film-grab website.
 
 Example:
 
@@ -43,7 +58,6 @@ Example:
 
 ```
 
-
 ## Usage
 
 ### Download and (optionally) Extract Movie Galleries
@@ -58,7 +72,7 @@ Adjust the command-line arguments as needed based on your requirements.
 
 #### Command-line Arguments
 * `--movie-list`: Path to the movie list JSON file (required).
-* `--output-dir`: Output directory for downloaded and extracted files (default: 'downloads').
+* `--output-dir`: Output directory for downloaded and extracted files (default: 'output').
 * `--extract`: Flag to indicate whether to extract the downloaded files (optional).
 
 
@@ -73,13 +87,10 @@ python extract_zips.py --output-dir output
 
 - `--output-dir`: Path to the output folder containing zip files for extraction.
 
-
 Adjust the command-line arguments as needed based on your requirements.
-
 
 ## Contributing
 Feel free to contribute to this project by submitting issues or pull requests.
 
 ## License
 This project is licensed under the MIT License.
-
