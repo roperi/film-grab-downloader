@@ -106,8 +106,9 @@ def main():
         None
     """
     parser = argparse.ArgumentParser(description='Download and extract movie galleries from film-grab.com.')
-    parser.add_argument('--movie-list', required=True, help='Path to the movie list JSON file')
-    parser.add_argument('--output-dir', default='output', help='Output directory for downloaded and extracted files')
+    parser.add_argument('--movie-list', '-l', required=True, help='Path to the movie list JSON file')
+    parser.add_argument(
+        '--output-dir', '-o', default='output', help='Output directory for downloaded and extracted files')
     parser.add_argument(
         '--extract', action='store_true', help='Flag to indicate whether to extract the downloaded files')
     args = parser.parse_args()

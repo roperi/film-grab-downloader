@@ -8,7 +8,7 @@ def extract_and_delete_zips(target_dir):
     Extract all zip files in their respective folders and delete the zip files if extraction is successful.
 
     Args:
-        target_dir (str): The output folder where zip files are located.
+        target_dir (str): The target folder where zip files are located.
 
     Returns:
         None
