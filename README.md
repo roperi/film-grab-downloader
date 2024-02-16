@@ -95,7 +95,7 @@ Adjust the command-line arguments as needed based on your requirements.
 
 ### Extract All Zip Files
 ```bash
-usage: extract_and_delete_zips.py [-h] --output-dir OUTPUT_DIR
+usage: extract_and_delete_zips.py [-h] --target-dir TARGET_DIR
 
 # Example
 python extract_and_delete_zips.py --target-dir output
