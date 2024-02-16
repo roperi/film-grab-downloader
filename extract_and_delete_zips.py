@@ -3,17 +3,17 @@ import zipfile
 import argparse
 
 
-def extract_all_zips(output_dir):
+def extract_and_delete_zips(target_dir):
     """
     Extract all zip files in their respective folders and delete the zip files if extraction is successful.
 
     Args:
-        output_dir (str): The output folder where zip files are located.
+        target_dir (str): The output folder where zip files are located.
 
     Returns:
         None
     """
-    for root, _, files in os.walk(output_dir):
+    for root, _, files in os.walk(target_dir):
         for file in files:
             if file.endswith(".zip"):
                 zip_file_path = os.path.join(root, file)
@@ -32,10 +32,10 @@ def extract_all_zips(output_dir):
 def main():
     parser = argparse.ArgumentParser(
         description='Extract all zip files in their respective folders and delete zips if extraction is successful.')
-    parser.add_argument('--output-dir', required=True, help='Path to the output folder containing zip files.')
+    parser.add_argument('--target-dir', required=True, help='Path to the target folder containing zip files.')
     args = parser.parse_args()
 
-    extract_all_zips(args.output_dir)
+    extract_and_delete_zips(args.target_dir)
 
 
 if __name__ == "__main__":

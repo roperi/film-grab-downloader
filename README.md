@@ -31,7 +31,7 @@ cd film-grab-downloader/
 
 ## Create a movie list
 
-Make sure to create a movie list that includes the following keys: `id`, 'title` and `url`. The `id` can be taken from 
+Make sure to create a movie list that includes the following keys: `id`, `title` and `url`. The `id` of the movie can be taken from 
 the download zip file button in the film-grab website.
 
 Example:
@@ -95,23 +95,24 @@ Adjust the command-line arguments as needed based on your requirements.
 
 ### Extract All Zip Files
 ```bash
-usage: extract_zips.py [-h] --output-dir OUTPUT_DIR
+usage: extract_and_delete_zips.py [-h] --output-dir OUTPUT_DIR
 
 # Example
-python extract_zips.py --output-dir output
+python extract_and_delete_zips.py --target-dir output
 ```
 ### Command-line arguments
 
-- `--output-dir`: Path to the output folder containing zip files for extraction.
+- `--target-dir`: Path to the folder containing zip files for extraction (and deletion once extracted).
 
 Adjust the command-line arguments as needed based on your requirements.
 
 ## Contributing
 Feel free to contribute to this project by submitting issues or pull requests.
 
-## License
-This project is licensed under the MIT License.
+## Copyright & License
+Copyright 2024 roperi.
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## TODO
 - Fix unit tests
