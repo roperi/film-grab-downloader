@@ -12,6 +12,7 @@ Film Grab Downloader is a Python script that facilitates the downloading and opt
 - Optional flag to indicate whether to extract downloaded files
 - Sequential downloads with rate limiting to ensure reliability
 - Built-in retry logic for rate-limited requests (HTTP 429)
+- Machine-friendly filename normalization for extracted images
 
 ## Installation
 
@@ -119,6 +120,26 @@ python download_zips.py --movie-list input/movie-list.json --output-dir output -
 Proxies are rotated automatically for each download. If you have 3 proxies and 10 movies, the rotation will be: proxy1, proxy2, proxy3, proxy1, proxy2, proxy3, proxy1, proxy2, proxy3, proxy1.
 
 **Note:** Free proxies often have slow speeds and high failure rates. For best results, use paid or residential proxies.
+
+### Filename Normalization
+
+When extracting images, files are automatically renamed to machine-friendly format:
+
+- **Lowercase**: All letters converted to lowercase
+- **ASCII-safe**: Unicode characters normalized (e.g., `é` → `e`)
+- **No spaces**: Replaced with hyphens
+- **Deterministic IDs**: Zero-padded sequential numbers (`000001.jpg`, `000002.jpg`, etc.)
+- **Extension normalization**: `.jpeg` → `.jpg`
+
+**Example:**
+- Original: `Photo 001 (1920x1080).JPEG`
+- Normalized: `000001.jpg`
+
+This ensures:
+- Consistent naming across different operating systems
+- Safe for scripts and automation
+- Predictable file ordering
+- No encoding issues
 
 ### Extract All Zip Files
 
