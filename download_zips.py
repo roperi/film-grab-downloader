@@ -14,28 +14,38 @@ import requests
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Get paths
-script_dir = os.path.dirname(os.path.abspath(__file__))
-log_path = os.path.join(script_dir, "log", "download.log")
 
-# Create file handler which logs even DEBUG messages
-file_handler = logging.FileHandler(log_path)
-file_handler.setLevel(logging.DEBUG)
+def setup_logging():
+    """Set up logging handlers. Call this once at application startup."""
+    # Guard against adding handlers multiple times
+    if logger.handlers:
+        return
 
-# Create console handler
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)
+    # Get paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    log_path = os.path.join(script_dir, "log", "download.log")
 
-# Create formatter and add it to the handlers
-formatter = logging.Formatter(
-    "[%(levelname)s. %(name)s, (line #%(lineno)d) - %(asctime)s] %(message)s"
-)
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
+    # Create log directory if it doesn't exist
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
-# Add handlers to logger
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+    # Create file handler which logs even DEBUG messages
+    file_handler = logging.FileHandler(log_path)
+    file_handler.setLevel(logging.DEBUG)
+
+    # Create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+
+    # Create formatter and add it to the handlers
+    formatter = logging.Formatter(
+        "[%(levelname)s. %(name)s, (line #%(lineno)d) - %(asctime)s] %(message)s"
+    )
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add handlers to logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 
 
 # Functions
@@ -81,7 +91,8 @@ def download_zip(url, movie_list_df, args):
             return {"status": "skipped", "movie_title": title}
 
         logger.info(f"Attempting to download zip file for `{title}`")
-        response = requests.get(url)
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
 
         # Create output directory if it doesn't exist
         output_dir = os.path.join(args.output_dir, title)
@@ -96,13 +107,13 @@ def download_zip(url, movie_list_df, args):
         if args.extract:
             logger.info(f"Extracting `{title}`")
             z = zipfile.ZipFile(BytesIO(response.content))
-            z.extractall(f"{title}/")
+            z.extractall(output_dir)
             logger.info(f"Extracted `{title}`")
             z.close()
         return {"status": "success", "movie_title": title}
 
     except Exception as e:
-        logger.error(e)
+        logger.exception("Failed to download or extract movie gallery")
         return {"status": "failure", "error_message": str(e)}
 
 
@@ -113,6 +124,8 @@ def main():
     Returns:
         None
     """
+    setup_logging()
+
     parser = argparse.ArgumentParser(
         description="Download and extract movie galleries from film-grab.com."
     )

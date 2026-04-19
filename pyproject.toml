@@ -28,8 +28,8 @@ dev = [
 film-grab-download = "download_zips:main"
 film-grab-extract = "extract_and_delete_zips:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
+[tool.setuptools]
+py-modules = ["download_zips", "extract_and_delete_zips"]
 
 [tool.ruff]
 line-length = 100

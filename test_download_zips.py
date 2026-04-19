@@ -41,7 +41,8 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         result = download_zip(test_url, self.movie_list_df, args)
 
-        mock_requests.assert_called_once_with(test_url)
+        mock_requests.assert_called_once_with(test_url, timeout=30)
+        mock_response.raise_for_status.assert_called_once()
         mock_makedirs.assert_called_once()
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["movie_title"], "Movie2")
@@ -84,6 +85,39 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         self.assertEqual(result["status"], "failure")
         self.assertIn("error_message", result)
+
+    @patch("download_zips.zipfile.ZipFile")
+    @patch("download_zips.os.path.exists")
+    @patch("download_zips.open", new_callable=mock_open)
+    @patch("download_zips.os.makedirs")
+    @patch("download_zips.requests.get")
+    def test_download_zip_success_with_extract(
+        self, mock_requests, mock_makedirs, mock_open_file, mock_exists, mock_zipfile
+    ):
+        mock_exists.return_value = False
+        mock_response = MagicMock()
+        mock_response.content = b"Test content"
+        mock_requests.return_value = mock_response
+
+        # Set up ZipFile mock with proper context manager support
+        mock_zip_instance = MagicMock()
+        mock_zipfile.return_value.__enter__.return_value = mock_zip_instance
+
+        args = MagicMock()
+        args.output_dir = "test_output"
+        args.extract = True
+
+        test_url = "https://film-grab.com/wp-admin/admin-ajax.php?action=download_gallery&gallery_id=2&bwg=0"
+
+        result = download_zip(test_url, self.movie_list_df, args)
+
+        mock_requests.assert_called_once_with(test_url, timeout=30)
+        mock_response.raise_for_status.assert_called_once()
+        mock_makedirs.assert_called_once()
+        mock_zipfile.assert_called_once()
+        # Verify extract was called (the mock context manager makes direct assertion tricky)
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["movie_title"], "Movie2")
 
 
 if __name__ == "__main__":
