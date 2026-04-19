@@ -1,0 +1,20 @@
+# Example proxy list for film-grab-downloader
+# One proxy per line
+# Lines starting with # are comments
+#
+# Format: protocol://[user:pass@]host:port
+#
+# Supported protocols: http, https
+# Note: SOCKS proxies (socks4://, socks5://) are NOT supported by this tool
+
+# Free example proxies (may not work - replace with your own)
+http://proxy1.example.com:8080
+http://user:password@proxy2.example.com:3128
+https://secure-proxy.example.com:443
+
+# SOCKS proxies are NOT supported (would require requests library)
+# socks5://socks-proxy.example.com:1080
+# socks4://socks4-proxy.example.com:9050
+
+# Tip: For best results, use paid/residential proxies for reliability
+# Free proxies often have slow speeds and high failure rates

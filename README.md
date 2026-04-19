@@ -97,6 +97,28 @@ python download_zips.py --movie-list input/movie-list.json --output-dir output -
 | `--movie-list`, `-l` | Yes | Path to the movie list JSON file |
 | `--output-dir`, `-o` | No | Output directory (default: `output`) |
 | `--extract` | No | Flag to extract downloaded files |
+| `--proxy-list`, `-p` | No | Path to text file containing proxy URLs (one per line) |
+
+### Using Proxies (Optional)
+
+To bypass rate limiting when downloading large movie lists, you can use proxies:
+
+1. Create a proxy list file (see `input/proxy-list-example.txt`):
+```
+# One proxy per line
+http://proxy1.example.com:8080
+http://user:pass@proxy2.example.com:3128
+https://proxy3.example.com:443
+```
+
+2. Run with the `--proxy-list` argument:
+```bash
+python download_zips.py --movie-list input/movie-list.json --output-dir output --proxy-list input/proxy-list.txt
+```
+
+Proxies are rotated automatically for each download. If you have 3 proxies and 10 movies, the rotation will be: proxy1, proxy2, proxy3, proxy1, proxy2, proxy3, proxy1, proxy2, proxy3, proxy1.
+
+**Note:** Free proxies often have slow speeds and high failure rates. For best results, use paid or residential proxies.
 
 ### Extract All Zip Files
 
