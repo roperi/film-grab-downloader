@@ -3,9 +3,8 @@ import logging
 import os
 import sys
 import zipfile
-from functools import partial
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
-from multiprocessing import Pool, cpu_count
 
 import pandas as pd
 import requests
@@ -65,14 +64,15 @@ def get_title_from_id(movie_id, movie_list_df):
     return movie_list_df.loc[movie_list_df["id"] == movie_id, "title"].item()
 
 
-def download_zip(url, movie_list_df, args):
+def download_zip(url, movie_list_df, args, title):
     """
     Download and optionally extract a movie gallery from film-grab.com.
 
     Args:
         url (str): The URL of the movie gallery.
-        args (argparse.Namespace): Command-line arguments.
         movie_list_df (pd.DataFrame): The DataFrame containing movie information.
+        args (argparse.Namespace): Command-line arguments.
+        title (str): The movie title (pre-computed to avoid lookup issues).
 
     Returns:
         dict: A dictionary containing information about the download and extraction.
@@ -81,9 +81,6 @@ def download_zip(url, movie_list_df, args):
               - 'error_message' (optional): The error message if the download or extraction fails.
     """
     try:
-        movie_id = int(url.split("gallery_id=")[1].split("&bwg=")[0])
-        title = get_title_from_id(movie_id, movie_list_df)
-
         # Check if the destination zip file already exists
         zip_file_path = os.path.join(args.output_dir, title, f"{title}.zip")
         if os.path.exists(zip_file_path):
@@ -156,13 +153,24 @@ def main():
         for gallery_id in movie_list_df["id"]
     ]
 
-    logger.info(f"There are {cpu_count()} CPUs on this machine ")
+    max_workers = os.cpu_count() or 4
+    logger.info(f"Using {max_workers} worker threads for parallel downloads")
 
-    pool = Pool(cpu_count())
-    download_func = partial(download_zip, movie_list_df=movie_list_df, args=args)
-    results = pool.starmap(download_func, zip(urls))
-    pool.close()
-    pool.join()
+    # Create zip items with their corresponding URLs and titles
+    download_items = []
+    for url, gallery_id in zip(urls, movie_list_df["id"]):
+        title = movie_list_df.loc[movie_list_df["id"] == gallery_id, "title"].item()
+        download_items.append((url, title))
+
+    # Download in parallel using threads (safe for I/O-bound operations)
+    results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(download_zip, url, movie_list_df, args, title): title
+            for url, title in download_items
+        }
+        for future in as_completed(futures):
+            results.append(future.result())
 
     print("\n=== Status Report ===")
     for result in results:

@@ -39,7 +39,7 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         test_url = "https://film-grab.com/wp-admin/admin-ajax.php?action=download_gallery&gallery_id=2&bwg=0"
 
-        result = download_zip(test_url, self.movie_list_df, args)
+        result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
         mock_requests.assert_called_once_with(test_url, timeout=30)
         mock_response.raise_for_status.assert_called_once()
@@ -62,7 +62,7 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         test_url = "https://film-grab.com/wp-admin/admin-ajax.php?action=download_gallery&gallery_id=2&bwg=0"
 
-        result = download_zip(test_url, self.movie_list_df, args)
+        result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
         mock_requests.assert_not_called()
         self.assertEqual(result["status"], "skipped")
@@ -81,7 +81,7 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         test_url = "https://film-grab.com/wp-admin/admin-ajax.php?action=download_gallery&gallery_id=2&bwg=0"
 
-        result = download_zip(test_url, self.movie_list_df, args)
+        result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
         self.assertEqual(result["status"], "failure")
         self.assertIn("error_message", result)
@@ -109,7 +109,7 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         test_url = "https://film-grab.com/wp-admin/admin-ajax.php?action=download_gallery&gallery_id=2&bwg=0"
 
-        result = download_zip(test_url, self.movie_list_df, args)
+        result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
         mock_requests.assert_called_once_with(test_url, timeout=30)
         mock_response.raise_for_status.assert_called_once()
