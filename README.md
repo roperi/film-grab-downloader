@@ -36,19 +36,6 @@ pip install -e .
 
 This allows you to use the commands `film-grab-download` and `film-grab-extract` from anywhere.
 
-### Option 3: Manual setup
-
-```bash
-git clone https://github.com/roperi/film-grab-downloader.git
-cd film-grab-downloader/
-
-# Create virtual environment
-virtualenv -p python3.10 venv  # or any Python 3.10+
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
 
 ## Create a movie list
 
