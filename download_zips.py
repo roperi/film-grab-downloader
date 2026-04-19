@@ -19,6 +19,53 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def load_proxy_list(proxy_file):
+    """
+    Load proxy list from a text file.
+
+    Args:
+        proxy_file (str): Path to file containing one proxy per line.
+
+    Returns:
+        list: List of proxy URLs.
+    """
+    if not proxy_file or not os.path.exists(proxy_file):
+        return []
+
+    with open(proxy_file, "r") as f:
+        proxies = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+    return proxies
+
+
+def get_opener(proxy_url=None):
+    """
+    Create a URL opener with optional proxy support.
+
+    Args:
+        proxy_url (str, optional): Proxy URL (e.g., 'http://proxy:8080').
+
+    Returns:
+        urllib.request.OpenerDirector: Configured opener.
+    """
+    handlers = []
+
+    if proxy_url:
+        proxy_handler = urllib.request.ProxyHandler(
+            {
+                "http": proxy_url,
+                "https": proxy_url,
+            }
+        )
+        handlers.append(proxy_handler)
+
+    # Add SSL context handler
+    https_handler = urllib.request.HTTPSHandler(context=_ssl_context)
+    handlers.append(https_handler)
+
+    opener = urllib.request.build_opener(*handlers)
+    return opener
+
+
 def setup_logging():
     """Set up logging handlers. Call this once at application startup."""
     # Guard against adding handlers multiple times
@@ -69,7 +116,7 @@ def get_title_from_id(movie_id, movie_list_df):
     return movie_list_df.loc[movie_list_df["id"] == movie_id, "title"].item()
 
 
-def download_zip(url, movie_list_df, args, title):
+def download_zip(url, movie_list_df, args, title, proxy_url=None):
     """
     Download and optionally extract a movie gallery from film-grab.com.
 
@@ -78,6 +125,7 @@ def download_zip(url, movie_list_df, args, title):
         movie_list_df (pd.DataFrame): The DataFrame containing movie information.
         args (argparse.Namespace): Command-line arguments.
         title (str): The movie title (pre-computed to avoid lookup issues).
+        proxy_url (str, optional): Proxy URL to use for this request.
 
     Returns:
         dict: A dictionary containing information about the download and extraction.
@@ -92,17 +140,21 @@ def download_zip(url, movie_list_df, args, title):
             logger.info(f"`{title}` has already been downloaded. Skipping.")
             return {"status": "skipped", "movie_title": title}
 
-        logger.info(f"Attempting to download zip file for `{title}`")
+        logger.info(
+            f"Attempting to download zip file for `{title}`"
+            + (f" via proxy {proxy_url}" if proxy_url else "")
+        )
         # Use urllib.request (built-in) to avoid external dependencies
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        opener = get_opener(proxy_url)
         try:
-            with urllib.request.urlopen(req, timeout=30, context=_ssl_context) as response:
+            with opener.open(req, timeout=30) as response:
                 content = response.read()
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 logger.warning("Rate limited (429). Waiting 10 seconds before retrying...")
                 time.sleep(10)
-                with urllib.request.urlopen(req, timeout=30, context=_ssl_context) as response:
+                with opener.open(req, timeout=30) as response:
                     content = response.read()
             else:
                 raise
@@ -156,7 +208,18 @@ def main():
         action="store_true",
         help="Flag to indicate whether to extract the downloaded files",
     )
+    parser.add_argument(
+        "--proxy-list",
+        "-p",
+        default=None,
+        help="Path to text file containing proxy URLs (one per line)",
+    )
     args = parser.parse_args()
+
+    # Load proxy list if provided
+    proxies = load_proxy_list(args.proxy_list)
+    if proxies:
+        logger.info(f"Loaded {len(proxies)} proxies from {args.proxy_list}")
 
     movie_list_df = pd.read_json(args.movie_list)
 
@@ -175,7 +238,9 @@ def main():
     results = []
     for i, (url, gallery_id) in enumerate(zip(urls, movie_list_df["id"])):
         title = movie_list_df.loc[movie_list_df["id"] == gallery_id, "title"].item()
-        result = download_zip(url, movie_list_df, args, title)
+        # Rotate through proxies if available
+        proxy_url = proxies[i % len(proxies)] if proxies else None
+        result = download_zip(url, movie_list_df, args, title, proxy_url)
         results.append(result)
         # Add delay between downloads to avoid rate limiting
         if i < len(urls) - 1:
