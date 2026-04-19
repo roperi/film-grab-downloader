@@ -10,7 +10,8 @@ Film Grab Downloader is a Python script that facilitates the downloading and opt
 - Command-line interface for easy usage
 - Specify the movie list JSON file and output directory as command-line arguments
 - Optional flag to indicate whether to extract downloaded files
-- Parallel downloads using multiprocessing
+- Sequential downloads with rate limiting to ensure reliability
+- Built-in retry logic for rate-limited requests (HTTP 429)
 
 ## Installation
 
