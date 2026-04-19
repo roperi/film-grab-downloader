@@ -1,9 +1,11 @@
 import argparse
 import logging
 import os
+import re
 import ssl
 import sys
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 import zipfile
@@ -57,6 +59,60 @@ def _redact_proxy_url(proxy_url):
     if "@" in proxy_url:
         return proxy_url.split("@")[-1]
     return proxy_url
+
+
+def sanitize_filename(filename):
+    """
+    Convert filename to machine-friendly format.
+
+    - Lowercase
+    - ASCII-safe characters only
+    - No spaces (use hyphens as separators)
+    - Remove/reduce multiple consecutive hyphens
+
+    Args:
+        filename (str): Original filename.
+
+    Returns:
+        str: Sanitized filename.
+    """
+    # Normalize unicode to ASCII (e.g., é -> e)
+    filename = unicodedata.normalize("NFKD", filename)
+    filename = filename.encode("ascii", "ignore").decode("ascii")
+
+    # Convert to lowercase
+    filename = filename.lower()
+
+    # Replace spaces and underscores with hyphens
+    filename = re.sub(r"[\s_]+", "-", filename)
+
+    # Remove non-alphanumeric characters except hyphens and dots
+    filename = re.sub(r"[^a-z0-9.-]", "", filename)
+
+    # Remove multiple consecutive hyphens
+    filename = re.sub(r"-+", "-", filename)
+
+    # Strip leading/trailing hyphens and dots
+    filename = filename.strip("-.")
+
+    return filename or "unnamed"
+
+
+def get_safe_extension(filename):
+    """
+    Get normalized file extension.
+
+    Args:
+        filename (str): Original filename.
+
+    Returns:
+        str: Normalized extension (e.g., '.jpg').
+    """
+    ext = os.path.splitext(filename)[1].lower()
+    # Normalize .jpeg to .jpg
+    if ext == ".jpeg":
+        ext = ".jpg"
+    return ext if ext else ".jpg"
 
 
 def get_opener(proxy_url=None):
@@ -194,8 +250,23 @@ def download_zip(url, movie_list_df, args, title, proxy_url=None, retry_count=0)
         if args.extract:
             logger.info(f"Extracting `{title}`")
             z = zipfile.ZipFile(BytesIO(content))
-            z.extractall(output_dir)
-            logger.info(f"Extracted `{title}`")
+            # Get list of files in zip
+            file_list = sorted([f for f in z.namelist() if not f.endswith("/")])
+
+            # Extract and rename with deterministic zero-padded IDs
+            for idx, zip_path in enumerate(file_list, start=1):
+                # Read file content
+                file_content = z.read(zip_path)
+                # Get original extension
+                orig_ext = get_safe_extension(zip_path)
+                # Create zero-padded filename (6 digits)
+                new_filename = f"{idx:06d}{orig_ext}"
+                # Save with new name
+                new_path = os.path.join(output_dir, new_filename)
+                with open(new_path, "wb") as f:
+                    f.write(file_content)
+
+            logger.info(f"Extracted `{title}` ({len(file_list)} files)")
             z.close()
         return {"status": "success", "movie_title": title}
 

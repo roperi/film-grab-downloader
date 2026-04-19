@@ -3,7 +3,14 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pandas as pd
 
-from download_zips import download_zip, get_opener, get_title_from_id, load_proxy_list
+from download_zips import (
+    download_zip,
+    get_opener,
+    get_safe_extension,
+    get_title_from_id,
+    load_proxy_list,
+    sanitize_filename,
+)
 
 
 class TestDownloadZipFiles(unittest.TestCase):
@@ -156,6 +163,46 @@ class TestDownloadZipFiles(unittest.TestCase):
         mock_build_opener.assert_called()
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["movie_title"], "Movie2")
+
+
+class TestFilenameSanitization(unittest.TestCase):
+    """Test machine-friendly filename conversion."""
+
+    def test_sanitize_filename_lowercase(self):
+        self.assertEqual(sanitize_filename("MOVIE.JPG"), "movie.jpg")
+
+    def test_sanitize_filename_spaces(self):
+        self.assertEqual(sanitize_filename("my movie.jpg"), "my-movie.jpg")
+
+    def test_sanitize_filename_unicode(self):
+        self.assertEqual(sanitize_filename("Amélie.jpg"), "amelie.jpg")
+
+    def test_sanitize_filename_special_chars(self):
+        self.assertEqual(sanitize_filename("What's New?"), "whats-new")
+
+    def test_sanitize_filename_multiple_hyphens(self):
+        self.assertEqual(sanitize_filename("my---movie"), "my-movie")
+
+    def test_sanitize_filename_leading_trailing(self):
+        self.assertEqual(sanitize_filename("---movie.jpg---"), "movie.jpg")
+
+    def test_sanitize_filename_underscores(self):
+        self.assertEqual(sanitize_filename("my_movie_name"), "my-movie-name")
+
+    def test_sanitize_filename_empty(self):
+        self.assertEqual(sanitize_filename(""), "unnamed")
+
+    def test_get_safe_extension_jpg(self):
+        self.assertEqual(get_safe_extension("image.jpg"), ".jpg")
+
+    def test_get_safe_extension_jpeg_normalized(self):
+        self.assertEqual(get_safe_extension("image.JPEG"), ".jpg")
+
+    def test_get_safe_extension_png(self):
+        self.assertEqual(get_safe_extension("image.PNG"), ".png")
+
+    def test_get_safe_extension_default(self):
+        self.assertEqual(get_safe_extension("noextension"), ".jpg")
 
 
 class TestProxyFunctions(unittest.TestCase):
