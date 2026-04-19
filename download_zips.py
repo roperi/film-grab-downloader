@@ -33,8 +33,30 @@ def load_proxy_list(proxy_file):
         return []
 
     with open(proxy_file, "r") as f:
-        proxies = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+        proxies = [
+            line.strip()
+            for line in (raw_line.strip() for raw_line in f)
+            if line and not line.startswith("#")
+        ]
     return proxies
+
+
+def _redact_proxy_url(proxy_url):
+    """
+    Redact credentials from proxy URL for safe logging.
+
+    Args:
+        proxy_url (str): Proxy URL potentially containing credentials.
+
+    Returns:
+        str: Proxy URL with credentials redacted.
+    """
+    if not proxy_url:
+        return ""
+    # Remove userinfo (credentials) from proxy URL
+    if "@" in proxy_url:
+        return proxy_url.split("@")[-1]
+    return proxy_url
 
 
 def get_opener(proxy_url=None):
@@ -116,7 +138,7 @@ def get_title_from_id(movie_id, movie_list_df):
     return movie_list_df.loc[movie_list_df["id"] == movie_id, "title"].item()
 
 
-def download_zip(url, movie_list_df, args, title, proxy_url=None):
+def download_zip(url, movie_list_df, args, title, proxy_url=None, retry_count=0):
     """
     Download and optionally extract a movie gallery from film-grab.com.
 
@@ -126,6 +148,7 @@ def download_zip(url, movie_list_df, args, title, proxy_url=None):
         args (argparse.Namespace): Command-line arguments.
         title (str): The movie title (pre-computed to avoid lookup issues).
         proxy_url (str, optional): Proxy URL to use for this request.
+        retry_count (int): Number of retries attempted (for internal use).
 
     Returns:
         dict: A dictionary containing information about the download and extraction.
@@ -142,7 +165,7 @@ def download_zip(url, movie_list_df, args, title, proxy_url=None):
 
         logger.info(
             f"Attempting to download zip file for `{title}`"
-            + (f" via proxy {proxy_url}" if proxy_url else "")
+            + (f" via proxy {_redact_proxy_url(proxy_url)}" if proxy_url else "")
         )
         # Use urllib.request (built-in) to avoid external dependencies
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -152,10 +175,9 @@ def download_zip(url, movie_list_df, args, title, proxy_url=None):
                 content = response.read()
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                logger.warning("Rate limited (429). Waiting 10 seconds before retrying...")
-                time.sleep(10)
-                with opener.open(req, timeout=30) as response:
-                    content = response.read()
+                # Rate limited - don't retry with same proxy, let caller try next proxy
+                logger.warning(f"Rate limited (429) on proxy {_redact_proxy_url(proxy_url)}")
+                raise
             else:
                 raise
 
@@ -239,8 +261,50 @@ def main():
     for i, (url, gallery_id) in enumerate(zip(urls, movie_list_df["id"])):
         title = movie_list_df.loc[movie_list_df["id"] == gallery_id, "title"].item()
         # Rotate through proxies if available
-        proxy_url = proxies[i % len(proxies)] if proxies else None
-        result = download_zip(url, movie_list_df, args, title, proxy_url)
+        result = None
+        if proxies:
+            # Try each proxy until success or all proxies exhausted
+            for attempt in range(len(proxies)):
+                proxy_index = (i + attempt) % len(proxies)
+                proxy_url = proxies[proxy_index]
+                try:
+                    result = download_zip(url, movie_list_df, args, title, proxy_url)
+                    break  # Success, move to next movie
+                except urllib.error.HTTPError as e:
+                    if e.code == 429 and attempt < len(proxies) - 1:
+                        logger.warning("Trying next proxy...")
+                        time.sleep(1)  # Brief delay before trying next proxy
+                        continue
+                    else:
+                        result = {
+                            "status": "failure",
+                            "error_message": str(e),
+                            "movie_title": title,
+                        }
+                        break
+        else:
+            # No proxies - use direct connection
+            try:
+                result = download_zip(url, movie_list_df, args, title)
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    logger.warning("Rate limited (429). Waiting 10 seconds...")
+                    time.sleep(10)
+                    try:
+                        result = download_zip(url, movie_list_df, args, title)
+                    except Exception as ex:
+                        result = {
+                            "status": "failure",
+                            "error_message": str(ex),
+                            "movie_title": title,
+                        }
+                else:
+                    result = {
+                        "status": "failure",
+                        "error_message": str(e),
+                        "movie_title": title,
+                    }
+
         results.append(result)
         # Add delay between downloads to avoid rate limiting
         if i < len(urls) - 1:
