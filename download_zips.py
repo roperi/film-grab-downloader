@@ -1,16 +1,18 @@
 import argparse
 import logging
 import os
+import ssl
 import sys
+import time
+import urllib.error
+import urllib.request
 import zipfile
 from io import BytesIO
-from threading import Lock
 
 import pandas as pd
-import requests
 
-# Lock for sequential downloads
-_download_lock = Lock()
+# Create SSL context for HTTPS requests
+_ssl_context = ssl.create_default_context()
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -91,12 +93,19 @@ def download_zip(url, movie_list_df, args, title):
             return {"status": "skipped", "movie_title": title}
 
         logger.info(f"Attempting to download zip file for `{title}`")
-        # Use a fresh session per request and lock to avoid race conditions
-        with _download_lock:
-            with requests.Session() as session:
-                response = session.get(url, timeout=30)
-                response.raise_for_status()
-                content = response.content
+        # Use urllib.request (built-in) to avoid external dependencies
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=30, context=_ssl_context) as response:
+                content = response.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                logger.warning("Rate limited (429). Waiting 10 seconds before retrying...")
+                time.sleep(10)
+                with urllib.request.urlopen(req, timeout=30, context=_ssl_context) as response:
+                    content = response.read()
+            else:
+                raise
 
         # Create output directory if it doesn't exist
         output_dir = os.path.join(args.output_dir, title)
@@ -164,10 +173,13 @@ def main():
 
     # Download sequentially to ensure each request gets the correct response
     results = []
-    for url, gallery_id in zip(urls, movie_list_df["id"]):
+    for i, (url, gallery_id) in enumerate(zip(urls, movie_list_df["id"])):
         title = movie_list_df.loc[movie_list_df["id"] == gallery_id, "title"].item()
         result = download_zip(url, movie_list_df, args, title)
         results.append(result)
+        # Add delay between downloads to avoid rate limiting
+        if i < len(urls) - 1:
+            time.sleep(1)
 
     print("\n=== Status Report ===")
     for result in results:

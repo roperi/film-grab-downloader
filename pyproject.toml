@@ -14,7 +14,6 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.0.0",
-    "requests>=2.28.0",
 ]
 
 [project.optional-dependencies]

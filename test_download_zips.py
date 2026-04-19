@@ -24,19 +24,16 @@ class TestDownloadZipFiles(unittest.TestCase):
     @patch("download_zips.os.path.exists")
     @patch("download_zips.open", new_callable=mock_open)
     @patch("download_zips.os.makedirs")
-    @patch("download_zips.requests.Session")
+    @patch("download_zips.urllib.request.urlopen")
     def test_download_zip_success_no_extract(
-        self, mock_session_class, mock_makedirs, mock_open_file, mock_exists
+        self, mock_urlopen, mock_makedirs, mock_open_file, mock_exists
     ):
         mock_exists.return_value = False
         mock_response = MagicMock()
-        mock_response.content = b"Test content"
-
-        # Set up Session mock
-        mock_session = MagicMock()
-        mock_session.__enter__.return_value = mock_session
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.read.return_value = b"Test content"
+        mock_response.__enter__.return_value = mock_response
+        mock_response.__exit__.return_value = None
+        mock_urlopen.return_value = mock_response
 
         args = MagicMock()
         args.output_dir = "test_output"
@@ -46,8 +43,7 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
-        mock_session.get.assert_called_once_with(test_url, timeout=30)
-        mock_response.raise_for_status.assert_called_once()
+        mock_urlopen.assert_called_once()
         mock_makedirs.assert_called_once()
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["movie_title"], "Movie2")
@@ -55,9 +51,9 @@ class TestDownloadZipFiles(unittest.TestCase):
     @patch("download_zips.os.path.exists")
     @patch("download_zips.open", new_callable=mock_open)
     @patch("download_zips.os.makedirs")
-    @patch("download_zips.requests.Session")
+    @patch("download_zips.urllib.request.urlopen")
     def test_download_zip_skipped_when_exists(
-        self, mock_session_class, mock_makedirs, mock_open_file, mock_exists
+        self, mock_urlopen, mock_makedirs, mock_open_file, mock_exists
     ):
         mock_exists.return_value = True
 
@@ -69,23 +65,16 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
-        mock_session_class.assert_not_called()
+        mock_urlopen.assert_not_called()
         self.assertEqual(result["status"], "skipped")
 
     @patch("download_zips.os.path.exists")
     @patch("download_zips.open", new_callable=mock_open)
     @patch("download_zips.os.makedirs")
-    @patch("download_zips.requests.Session")
-    def test_download_zip_failure(
-        self, mock_session_class, mock_makedirs, mock_open_file, mock_exists
-    ):
+    @patch("download_zips.urllib.request.urlopen")
+    def test_download_zip_failure(self, mock_urlopen, mock_makedirs, mock_open_file, mock_exists):
         mock_exists.return_value = False
-
-        # Set up Session mock to raise an exception
-        mock_session = MagicMock()
-        mock_session.__enter__.return_value = mock_session
-        mock_session.get.side_effect = Exception("Connection error")
-        mock_session_class.return_value = mock_session
+        mock_urlopen.side_effect = Exception("Connection error")
 
         args = MagicMock()
         args.output_dir = "test_output"
@@ -102,21 +91,17 @@ class TestDownloadZipFiles(unittest.TestCase):
     @patch("download_zips.os.path.exists")
     @patch("download_zips.open", new_callable=mock_open)
     @patch("download_zips.os.makedirs")
-    @patch("download_zips.requests.Session")
+    @patch("download_zips.urllib.request.urlopen")
     def test_download_zip_success_with_extract(
-        self, mock_session_class, mock_makedirs, mock_open_file, mock_exists, mock_zipfile
+        self, mock_urlopen, mock_makedirs, mock_open_file, mock_exists, mock_zipfile
     ):
         mock_exists.return_value = False
         mock_response = MagicMock()
-        mock_response.content = b"Test content"
+        mock_response.read.return_value = b"Test content"
+        mock_response.__enter__.return_value = mock_response
+        mock_response.__exit__.return_value = None
+        mock_urlopen.return_value = mock_response
 
-        # Set up Session mock
-        mock_session = MagicMock()
-        mock_session.__enter__.return_value = mock_session
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
-
-        # Set up ZipFile mock with proper context manager support
         mock_zip_instance = MagicMock()
         mock_zipfile.return_value.__enter__.return_value = mock_zip_instance
 
@@ -128,8 +113,7 @@ class TestDownloadZipFiles(unittest.TestCase):
 
         result = download_zip(test_url, self.movie_list_df, args, "Movie2")
 
-        mock_session.get.assert_called_once_with(test_url, timeout=30)
-        mock_response.raise_for_status.assert_called_once()
+        mock_urlopen.assert_called_once()
         mock_makedirs.assert_called_once()
         mock_zipfile.assert_called_once()
         self.assertEqual(result["status"], "success")
