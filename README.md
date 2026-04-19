@@ -1,118 +1,156 @@
 # Film Grab Downloader
 
-Film Grab Downloader is a Python script that facilitates the downloading and optional extraction of movie galleries from film-grab.com. 
+Film Grab Downloader is a Python script that facilitates the downloading and optional extraction of movie galleries from film-grab.com.
 
 ## Features
-- Download and extract movie galleries from film-grab.com.
-- Extract all zip files in their respective folders.
-- Automatically delete zip files after successful extraction.
-- Command-line interface for easy usage.
-- Specify the movie list JSON file and output directory as command-line arguments.
-- Optional flag to indicate whether to extract downloaded files.
+
+- Download and extract movie galleries from film-grab.com
+- Extract all zip files in their respective folders
+- Automatically delete zip files after successful extraction
+- Command-line interface for easy usage
+- Specify the movie list JSON file and output directory as command-line arguments
+- Optional flag to indicate whether to extract downloaded files
+- Parallel downloads using multiprocessing
 
 ## Installation
 
-1. Clone repository
-```commandline
+### Option 1: Using pip (recommended)
+
+```bash
 git clone https://github.com/roperi/film-grab-downloader.git
 cd film-grab-downloader/
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-2. Create a virtual environment and activate it (optional but recommended):
-    ```bash
-    virtualenv -p ~/pythonroot/bin/python3.10  # example with python 3.10
-    source ~/.virtualenvs/film-grab/bin/activate # activate env
-    ```
+### Option 2: Install as a package
 
-3. Install the required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+pip install -e .
+```
+
+This allows you to use the commands `film-grab-download` and `film-grab-extract` from anywhere.
+
+### Option 3: Manual setup
+
+```bash
+git clone https://github.com/roperi/film-grab-downloader.git
+cd film-grab-downloader/
+
+# Create virtual environment
+virtualenv -p python3.10 venv  # or any Python 3.10+
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
 
 ## Create a movie list
 
-Make sure to create a movie list that includes the following keys: `id`, `title` and `url`. The `id` of the movie can be taken from 
+Make sure to create a movie list that includes the following keys: `id`, `title` and `url`. The `id` of the movie can be taken from
 the download zip file button in the film-grab website.
 
-Example:
+An example file is provided at `input/movie-list-example.json`:
 
-```
-# input/movie-list.json
+```json
 [
   {
-    "title":"25th Hour",
-    "url":"https://film-grab.com/2010/11/17/25th-hour/",
-    "id":"1482"
+    "title": "25th Hour",
+    "url": "https://film-grab.com/2010/11/17/25th-hour/",
+    "id": "1482"
   },
   {
-    "title":"24 Hour Party People",
-    "url":"https://film-grab.com/2013/07/31/24-hour-party-people/",
-    "id":"464"
+    "title": "24 Hour Party People",
+    "url": "https://film-grab.com/2013/07/31/24-hour-party-people/",
+    "id": "464"
   },
   {
-    "title":"10 Cloverfield Lane",
-    "url":"https://film-grab.com/2017/03/24/10-cloverfield-lane/",
-    "id":"76"
+    "title": "10 Cloverfield Lane",
+    "url": "https://film-grab.com/2017/03/24/10-cloverfield-lane/",
+    "id": "76"
   }
 ]
-
 ```
 
 ## Download an already prepared movie list
 
 You can also use a non-updated movie list (contains about 3000 titles):
 
-```commandline
+```bash
 pip install gdown
 gdown 11bQOupeNBYatGLhm2iZIHljPl65axiNj
 ```
-Once downloaded it, move the file to your input folder.
 
+Once downloaded, move the file to your `input` folder.
 
 ## Usage
 
-### Create some useful folders 
-```commandline
-cd film-grab-downloader/
-mkdir log output input
+### Setup directories
+
+```bash
+mkdir -p log output input
 ```
 
 ### Download and (optionally) Extract Movie Galleries
 
 ```bash
-usage: download_zips.py [-h] --movie-list MOVIE_LIST [--output-dir OUTPUT_DIR] [--extract]
-
-# Example:
 python download_zips.py --movie-list input/movie-list.json --output-dir output --extract
 ```
-Adjust the command-line arguments as needed based on your requirements.
 
 #### Command-line Arguments
-* `--movie-list`: Path to the movie list JSON file (required).
-* `--output-dir`: Output directory for downloaded and extracted files (default: 'output').
-* `--extract`: Flag to indicate whether to extract the downloaded files (optional).
 
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--movie-list`, `-l` | Yes | Path to the movie list JSON file |
+| `--output-dir`, `-o` | No | Output directory (default: `output`) |
+| `--extract` | No | Flag to extract downloaded files |
 
 ### Extract All Zip Files
-```bash
-usage: extract_and_delete_zips.py [-h] --target-dir TARGET_DIR
 
-# Example
+```bash
 python extract_and_delete_zips.py --target-dir output
 ```
-### Command-line arguments
 
-- `--target-dir`: Path to the folder containing zip files for extraction (and deletion once extracted).
+#### Command-line Arguments
 
-Adjust the command-line arguments as needed based on your requirements.
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--target-dir` | Yes | Path to folder containing zip files |
 
 ## Contributing
+
 Feel free to contribute to this project by submitting issues or pull requests.
 
-## Copyright & License
+### Development Setup
+
+```bash
+# Clone and setup
+git clone https://github.com/roperi/film-grab-downloader.git
+cd film-grab-downloader
+python -m venv venv
+source venv/bin/activate
+
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Install pre-commit hooks
+pre-commit install
+
+# Run tests
+pytest test_download_zips.py -v
+
+# Run linting and formatting
+ruff check .
+ruff format .
+```
+
+## License
+
 Copyright 2024 roperi.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## TODO
-- Fix unit tests
